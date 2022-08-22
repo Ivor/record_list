@@ -13,7 +13,7 @@ defmodule RecordList.Sort do
     ...
   ]
 
-  Options:
+  Configuration:
     :callback - A `function/2` or a module that exports `order_by/2`
     :default_order - default value to use when no order in parameters
     :default_sort -  default value to use when no sort in parameters

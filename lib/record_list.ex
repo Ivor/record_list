@@ -32,7 +32,7 @@ defmodule RecordList do
 
   @default_impl %{
     sort: RecordList.Sort,
-    paginate: RecordList.Pagination,
+    paginate: RecordList.Paginate,
     retrieve: RecordList.Retrieve
   }
 
@@ -62,6 +62,7 @@ defmodule RecordList do
 
   defmacro __using__(opts) do
     steps = Keyword.get(opts, :steps, [])
+    step_keys = Keyword.keys(steps)
 
     # This defines the transformation steps that are executed on the initial record_list, usually to modify
     # the record_list.query which is used to retrieve the data in the `:retrieve` step.
@@ -75,8 +76,21 @@ defmodule RecordList do
           def unquote(step)(%RecordList{} = record_list) do
             # TODO: we can maintain a list of all the step keys.
             # Then they can all be called in sequence until this point
+            # TODO: ensure that the steps before the current step are in the list of steps.
             apply(unquote(impl), :execute, [record_list, unquote(step), unquote(other_opts)])
             |> RecordList.add_step(unquote(step))
+          end
+
+          def unquote(step)(params) when is_map(params) do
+            unquote(step_keys)
+            |> Enum.reduce_while(%RecordList{params: params}, fn
+              unquote(step), record_list ->
+                {:halt, record_list}
+              missing_step, record_list ->
+                {:cont, step(record_list, missing_step)}
+            end)
+            # Now we have a record list up to just before this step.
+            |> step(unquote(step))
           end
 
           # TODO: do we need this form if we're going with the top form?

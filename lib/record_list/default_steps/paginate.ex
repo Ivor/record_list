@@ -8,8 +8,8 @@ defmodule RecordList.Paginate do
     :per_page - default value for how many records to return per page. Required if this value is not passed in via params.
     :per_page_keys - a list of keys to be used as the path for `get_in/2` to extract the per_page value from params. Defaults to `["per_page"]` but is also optional if per_page will never be passed in via params.
     :page_keys - a list of keys to be used as the path for `get_in/2` to extract the current page from params. Default to `["page"]`.
-    :limit_callback - a callback that will receive the query and the limit as arguments, or a module that exports `limit/2` which will receive the same arguments.
-    :offset_callback - a callback that will receive the query and the offset as arguments, or a module that exports `offset/2` which will receive the same arguments.
+    :limit_callback - a callback that will receive the query and the limit as arguments. Example: fn q,limit -> Ecto.Query.limit(q, ^limit) end
+    :offset_callback - a callback that will receive the query and the offset as arguments. Example: fn q,offset -> Ecto.Query.offset(q, ^offset) end
 
   In the execution of this step, a count (on :count_by) is done on the repo to determine the total records that match the query.
   This along with the page and per_page values is then used to build the %RecordList.Pagination{} struct.
@@ -73,24 +73,12 @@ defmodule RecordList.Paginate do
 
   defp apply_offset(query, offset, opts) do
     callback = Keyword.fetch!(opts, :offset_callback)
-
-    cond do
-      is_function(callback) -> callback.(query, offset)
-      Enum.member?(callback.__info__(:functions), {:offset, 2}) -> callback.offset(query, offset)
-      Enum.member?(callback.__info__(:macros), {:offset, 2}) -> callback.offset(query, offset)
-      true -> raise "Please pass in either an anonymous function with arity 2 or a module that exports either a function or a macro named :offset with arity 2 to the `:offset_callback` option. Ecto.Query works as this module."
-    end
+    callback.(query, offset)
   end
 
   defp apply_limit(query, limit, opts) do
     callback = Keyword.fetch!(opts, :limit_callback)
-
-    cond do
-      is_function(callback) -> callback.(query, limit)
-      Enum.member?(callback.__info__(:functions), {:limit, 2}) -> callback.limit(query, limit)
-      Enum.member?(callback.__info__(:macros), {:limit, 2}) -> callback.limit(query, limit)
-      true -> raise "Please pass in either an anonymous function with arity 2 or a module that exports either a function or a macro named :limit with arity 2 to the `:limit_callback` option. Ecto.Query works as this module."
-    end
+    callback.(query, limit)
   end
 
   def ensure_integer(value, default \\ nil)

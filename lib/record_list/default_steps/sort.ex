@@ -14,7 +14,7 @@ defmodule RecordList.Sort do
   ]
 
   Configuration:
-    :callback - A `function/2` or a module that exports `order_by/2`
+    :callback - An function that accepts to arguments. The query and a tuple with the order and sort key. callback.(query, [{order, sort}]). An example would be callback: fn q, v -> Ecto.Query.order_by(q, ^v) end
     :default_order - default value to use when no order in parameters
     :default_sort -  default value to use when no sort in parameters
     :order_keys - path to be passed `get_in /2` to extract the order value from params. Default is ["order"], meaning the order value lives on the top level of the params. %{"order" => "asc"} = params
@@ -56,14 +56,7 @@ defmodule RecordList.Sort do
 
   defp apply_ordering(query, values, opts) do
     callback = Keyword.fetch!(opts, :callback)
-
-    # TODO: verify that the `^` binding with the values works with Ecto.Query.
-    cond do
-      is_function(callback) -> callback.(query, values)
-      Enum.member?(callback.__info__(:functions), {:order_by, 2}) -> callback.order_by(query, values)
-      Enum.member?(callback.__info__(:macros), {:order_by, 2}) -> callback.order_by(query, values)
-      true -> raise "Please pass in either an anonymous function with arity 2 or a module that exports either a function or a macro named :order_by with arity 2 to the `:callback` option. Ecto.Query works as this module."
-    end
+    callback.(query, values)
   end
 
   defp order_nulls_last(:asc), do: :asc_nulls_last

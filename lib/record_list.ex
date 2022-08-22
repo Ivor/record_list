@@ -76,7 +76,7 @@ defmodule RecordList do
             # TODO: we can maintain a list of all the step keys.
             # Then they can all be called in sequence until this point
             apply(unquote(impl), :execute, [record_list, unquote(step), unquote(other_opts)])
-            |> RecordList.add_step(step)
+            |> RecordList.add_step(unquote(step))
           end
 
           # TODO: do we need this form if we're going with the top form?

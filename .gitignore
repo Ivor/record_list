@@ -24,3 +24,5 @@ record_list-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+/sample_record_list_implementation.ex

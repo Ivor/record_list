@@ -13,12 +13,19 @@ defmodule RecordList.Pagination do
     :current_page
   ]
 
+  @type t :: %__MODULE__{}
+  @type current_page :: nil | binary | integer
+  @type per_page :: nil | binary | integer
+  @type count :: integer()
+
+  @spec build(current_page(), per_page(), count()) :: __MODULE__.t()
   def build(current_page, per_page, count) do
     %__MODULE__{
       per_page: per_page,
       records_count: count,
       current_page: current_page
     }
+    |> parse_pages()
     |> calculate_offset()
     |> add_total_pages()
     |> maybe_add_next_page()
@@ -27,9 +34,29 @@ defmodule RecordList.Pagination do
     |> maybe_add_to()
   end
 
+  def parse_pages(%{per_page: per_page, current_page: current_page} = pagination) do
+    %{pagination | per_page: ensure_int(per_page), current_page: ensure_int(current_page, 1)}
+  end
+
+  defp ensure_int(value, default \\ nil)
+
+  defp ensure_int(value, default) when is_binary(value) do
+    value
+    |> String.to_integer()
+    |> ensure_int(default)
+  end
+
+  defp ensure_int(value, _default) when is_integer(value) and value < 1 do
+    raise "Value needs to be bigger than 0"
+  end
+
+  defp ensure_int(nil, default) when not is_nil(default), do: default
+
+  defp ensure_int(value, _default) when is_integer(value), do: value
+
   # Offset is 0 for the first page.
   def calculate_offset(%{per_page: per_page, current_page: page} = pagination) do
-    %{ pagination | records_offset: (page - 1) * per_page }
+    %{pagination | records_offset: (page - 1) * per_page}
   end
 
   def add_total_pages(%{records_count: count, per_page: per_page} = pagination) do
@@ -70,7 +97,6 @@ defmodule RecordList.Pagination do
   end
 
   def maybe_add_to(%{records_count: count} = pagination) when count in [nil, 0] do
-    # We're not adding a value for to when from == count.
     pagination
   end
 
@@ -87,5 +113,4 @@ defmodule RecordList.Pagination do
     to = current_page * per_page
     %{pagination | records_to: to}
   end
-
 end

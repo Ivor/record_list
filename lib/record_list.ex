@@ -30,25 +30,6 @@ defmodule RecordList do
 
   defstruct [:query, :params, :pagination, loaded: false, records: [], steps: [], extra: %{}]
 
-  @default_impl %{
-    sort: RecordList.Sort,
-    paginate: RecordList.Paginate,
-    retrieve: RecordList.Retrieve
-  }
-
-  @doc """
-  Takes the step and it's options and splits the implementation option (:impl) from the other options.
-  In the case where no implementation is passed a default implementation is retrieved, providing a default is defined.
-  Alternatively an error is raised.
-  """
-  def pop_impl(step, step_options) do
-    impl =
-      Keyword.get(step_options, :impl) || @default_impl[step] ||
-        raise "Please define :impl option for unknown step: #{step}. Received options: #{inspect(step_options)}"
-
-    {impl, Keyword.delete(step_options, :impl)}
-  end
-
   def add_step(%__MODULE__{steps: [step | _steps]} = record_list, step), do: record_list
 
   def add_step(%__MODULE__{steps: steps} = record_list, step) do
@@ -69,7 +50,7 @@ defmodule RecordList do
     steps
     |> Enum.map(fn
       {step, step_opts} ->
-        {impl, other_opts} = RecordList.pop_impl(step, step_opts)
+        {impl, other_opts} = Keyword.pop!(step_opts, :impl)
 
         quote do
           # TODO: perhaps pass in the step options as default but allow overriding?
@@ -86,6 +67,7 @@ defmodule RecordList do
             |> Enum.reduce_while(%RecordList{params: params}, fn
               unquote(step), record_list ->
                 {:halt, record_list}
+
               missing_step, record_list ->
                 {:cont, step(record_list, missing_step)}
             end)

@@ -9,7 +9,7 @@ defmodule RecordList.Sort do
   use RecordList,
   steps: [
     ...,
-    sort: [callback: Ecto.Query, default_order: :asc, default_sort: "name", order_keys: ["order"], sort_keys: ["sort"]],
+    sort: [callback: fn q, v -> Ecto.Query.order_by(q, v) end, default_order: :asc, default_sort: "name", order_keys: ["order"], sort_keys: ["sort"]],
     ...
   ]
 
@@ -17,8 +17,8 @@ defmodule RecordList.Sort do
     :callback - An function that accepts to arguments. The query and a tuple with the order and sort key. callback.(query, [{order, sort}]). An example would be callback: fn q, v -> Ecto.Query.order_by(q, ^v) end
     :default_order - default value to use when no order in parameters
     :default_sort -  default value to use when no sort in parameters
-    :order_keys - path to be passed `get_in /2` to extract the order value from params. Default is ["order"], meaning the order value lives on the top level of the params. %{"order" => "asc"} = params
-    :sort_keys - path to be passed `get_in /2` to extract the sort value from params. Default is ["sort"], meaning the sort value lives on the top level of the params. %{"sort" => "name"} = params
+    :order_keys - path to be passed to `get_in /2` to extract the order value from params. Default is ["order"], meaning the order value lives on the top level of the params. %{"order" => "asc"} = params
+    :sort_keys - path to be passed to `get_in /2` to extract the sort value from params. Default is ["sort"], meaning the sort value lives on the top level of the params. %{"sort" => "name"} = params
 
   """
   @behaviour RecordList.StepBehaviour

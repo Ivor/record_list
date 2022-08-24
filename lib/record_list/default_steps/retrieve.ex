@@ -1,6 +1,6 @@
 defmodule RecordList.Retrieve do
   @moduledoc """
-  A default implementation to retrieve records from the module passed in as `:repo`. This is build with an implementation of Ecto.Repo in mind.
+  A default implementation to retrieve records from the module passed in as `:repo`. This is built   with an implementation of Ecto.Repo in mind.
   The returned record list has the results assigns to the :records attribute and sets the `loaded` attribute to true.
 
   Configuration:

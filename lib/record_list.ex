@@ -1,35 +1,69 @@
 defmodule RecordList do
   @moduledoc """
-  A record list is a struct that contains a query that is sequentially built up by passing it through a pipeline of steps.
-  The struct collects the steps that have been executed and can finally contain the records as well as pagination information describing a simple implementation of pagination.
+  A struct that builds a list of records defined by a query by initialising with a set of parameters and passing the struct through a sequence of steps.
+  A pagination struct `RecordList.Pagination` is built to capture the paging information.
 
   The libary is built to be open-ended but a typical pipeline could look something like:
 
-  %RecordList{}
-  |> base()
-  |> sort()
-  |> search()
-  |> filter()
-  |> paginate()
-  |> retrieve()
+  ```
+  params -> base query -> apply sorting -> search against some criteria
+    -> apply filtering -> calculate paging values -> retrieve the records.
+  ```
 
-  The steps are defined in a list and implemented to call all the steps that we're defined higher in the list.
-  This means that you can call paginate to get the pagination information without actually retrieving the records.
-  Then when required, you can call retrieve to populate the `records` attribute of the struct.
-  The `loaded` attribute can be used to help indicate wether the records have been loaded.
+  A RecordList can be created by calling
 
-  Attributes:
-   - query: the variable where the query is built up. In the case of Ecto this will be an Ecto.Query struct.
-   - params: queries to create a record list are typically driven by parameters. These can be captured in the `params` attribute to be referenced in subsequent steps.
-   - pagination: paginating a list of data is common. RecordList comes with a %RecordList.Pagination{} struct that can be used to capture information describing the pages in the list.
-   - loaded: a boolean value indiciating whether the records have been loaded. An empty list of records does not capture the same information since the result of a query can be an empty list.
-   - records: a list of records retrieved by executing the query.
-   - steps: a list of the steps that have been executed. This makes it possible to not have to run a step.
-   - extra: a map of any extra information that might be needed along the way.
+  ```elixir
+    use RecordList,
+      steps: [
+        base: [impl: MyBaseStep],
+        sort: [impl: MySortStep, default_sort: "name", default_order: "asc"],
+        paginate: [impl: MyPaginationStep, per_page: 20, count_by: :id, repo: MyApp.Repo]
+        retrieve: [impl: MyRetrieveStep]
+      ]
+  ```
+
+  ## Steps
+
+  Steps implement the `RecordList.StepBehaviour` behaviour.
+  The `execute/3` function takes the record list in the making, the step name as an atom and any options that were passed in, for example, the `default_sort` and `default_order` options above.
+
+  Steps are executed in the order in which they are defined in the `:steps` option to the `RecordList.__using__/1` macro.
+  Calling a step will execute all the steps higher in the list of steps.
+
+  ```elixir
+    %RecordList{params: ^params, query: _base_query, steps: [:base]}
+      = MyRecordList.base(params)
+    %RecordList{loaded: true, records: _populated_with_results_of_query, params: ^params, query: _, steps: [:retrieve, :paginate, :sort, :base]}
+      = MyRecordList.retrieve(params)
+  ```
+
+  Notice that calling `retrieve/1` returns a record list with the prior steps executed as well. Calling `paginate/1` will build the pagination struct, but not retrieve the records.
+
+  ```elixir
+    %RecordList{loaded: false, records: [], pagination: %RecordList.Pagination{records_count: _, records_offset: _}, steps: [:retrieve, :paginate, :sort, :base]}
+      = MyRecordList.paginate(params)
+  ```
+
+  See `__struct__/0` for details about the attributes.
   """
+
+  @typedoc """
+  The RecordList struct collects meta data along with the list of records.
+
+  ## Attributes
+  * `:query`- the variable where the query is built up. In the case of Ecto this will be an Ecto.Query struct.
+  * `:params`- Queries to create a record list are typically driven by parameters. These can be captured in the `params` attribute to be referenced in subsequent steps.
+  * `:pagination`- paginating a list of data is common. RecordList comes with a `%RecordList.Pagination{}` struct that can be used to capture information describing the pages in the list.
+  * `:loaded`- a boolean value indiciating whether the records have been loaded. An empty list of records does not capture the same information since the result of a query can be an empty list.
+  * `:records`- a list of records retrieved by executing the query.
+  * `:steps`- a list of the steps that have been executed. This makes it possible to not have to run a step.
+  * `:extra`- a map of any extra information that might be needed along the way.
+  """
+  @type t :: %RecordList{}
 
   defstruct [:query, :params, :pagination, loaded: false, records: [], steps: [], extra: %{}]
 
+  @doc false
   def add_step(%__MODULE__{steps: [step | _steps]} = record_list, step), do: record_list
 
   def add_step(%__MODULE__{steps: steps} = record_list, step) do

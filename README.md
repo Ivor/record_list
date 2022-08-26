@@ -1,8 +1,9 @@
 # RecordList
 
-RecordList is a library for building a list of records that have gone through a series of steps. This sounds vague because it is very open-ended. 
-You can define any steps you want and string them along to form a pipeline. The result is a struct that has some attributes that make it more useful than just the list. 
-The use case that lead to RecordList is one where records are retrieved and presented to the user in a table. These tables typically have sortable columns, pagination controls, a search box an sometimes filters. A RecordList could be setup to start with a base query, apply sorting, apply filtering, apply a search, calculate pagination parameters and retrieve the data.
+A stepwise construction of a struct, from a map of parameters, to return a list of records, and meta information about the query. 
+
+Lists of records are useful in web applications and API's. The records returned often depend on paramaters such as sorting, filtering, searching and pagination. 
+The RecordList struct is built up by passing it through the steps defined, capturing the information used to define the list as well as the records. 
 
 ## Installation
 
@@ -19,8 +20,8 @@ end
 
 ## Usage
 
-The parameters for this pipeline of steps are often driven by the query parameters. As such any of the steps can receive a map with string keys as the argument. 
-The steps are executed in the order in which they are defined in the RecordList options. 
+Depending on the steps defined, a RecordList can be built up based on a database query, an Elixir Stream, an enumarable, etc. 
+No sequence of steps is enforced. However, the steps are called in the order in which they are defined. 
 
 ```elixir
 defmodule MyApp.MyRecordList do
@@ -42,14 +43,20 @@ defmodule MyApp.MyRecordList do
   end
 
 end
-  
-%RecordList{records: []], loaded: false, steps: [:sort, :base]} = sorted_record_list = MyApp.MyRecordList.sort(params)
-%RecordList{records: records, loaded: true, steps: [:retrieve, :sort, :base]} = retrieved_record_list = MyApp.MyRecordList.retrieve(sorted_record_list)
-# Or
-%RecordList{records: records, loaded: true, steps: [:retrieve, :sort, :base]} = retrieved_record_list = MyApp.MyRecordList.retrieve(params)
 ```
 
-In practice search and filter steps have been sufficiently different that a default implementation has not presented itself. In the example above a default `:sort` and default `:retrieval` (Ecto.Repo) step has been used. There is also a simple, default `:paginate` step, which adds a `%RecordList.Pagination{}` struct with useful information about the count, offset, and page info. 
+```elixir
+%RecordList{records: [], loaded: false, steps: [:sort, :base]} = 
+  sorted_record_list = MyApp.MyRecordList.sort(params)
+%RecordList{records: records, loaded: true, steps: [:retrieve, :sort, :base]} 
+  = retrieved_record_list = MyApp.MyRecordList.retrieve(sorted_record_list)
+# Or
+%RecordList{records: records, loaded: true, steps: [:retrieve, :sort, :base]} 
+  = retrieved_record_list = MyApp.MyRecordList.retrieve(params)
+```
+
+In practice search and filter steps have been sufficiently unique, and a default implementation has not presented itself. 
+In the example above a default `:sort` and default `:retrieval` (Ecto.Repo) step has been used. There is also a simple, default `:paginate` step, which adds a `%RecordList.Pagination{}` struct with useful information about the count, offset, and page info. 
 
 ```elixir
 defmodule MyApp.MyPagimatedList do
@@ -71,7 +78,9 @@ defmodule MyApp.MyPagimatedList do
   end
 
 end
-  
+```
+
+```elixir  
 %RecordList{records: []], loaded: false, steps: [:paginate, :base], pagination: %RecordList.Pagination{records_count: _, current_page: _}} = paginated_record_list = MyApp.MyRecordList.paginate(params)
 %RecordList{records: records, loaded: true, steps: [:retrieve, :paginate, :base]} = retrieved_record_list = MyApp.MyRecordList.retrieve(paginated_record_list)
 # Or

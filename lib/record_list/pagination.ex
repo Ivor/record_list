@@ -146,7 +146,7 @@ defmodule RecordList.Pagination do
   end
 
   @doc """
-  Adds the records_to value. 0 if count is nil, or 0. `count` if `count < per_page`. `records_count` if `is_nil(next_page). Otherwise current_page * per_page.
+  Adds the records_to value. 0 if count is nil, or 0. `count` if `count < per_page`. `records_count` if `is_nil(next_page)`. Otherwise current_page * per_page.
   """
   def maybe_add_to(%{records_count: count} = pagination) when count in [nil, 0] do
     pagination

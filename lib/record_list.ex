@@ -87,11 +87,7 @@ defmodule RecordList do
         {impl, other_opts} = Keyword.pop!(step_opts, :impl)
 
         quote do
-          # TODO: perhaps pass in the step options as default but allow overriding?
           def unquote(step)(%RecordList{} = record_list) do
-            # TODO: we can maintain a list of all the step keys.
-            # Then they can all be called in sequence until this point
-            # TODO: ensure that the steps before the current step are in the list of steps.
             apply(unquote(impl), :execute, [record_list, unquote(step), unquote(other_opts)])
             |> RecordList.add_step(unquote(step))
           end
@@ -105,15 +101,15 @@ defmodule RecordList do
               missing_step, record_list ->
                 {:cont, step(record_list, missing_step)}
             end)
-            # Now we have a record list up to just before this step.
             |> step(unquote(step))
           end
 
-          # TODO: do we need this form if we're going with the top form?
-          # This does allow for more dynamism by allowing for passing in a list of steps that can be reduced over.
           def step(%RecordList{} = record_list, unquote(step)) do
             unquote(step)(record_list)
-            # apply(unquote(impl), :execute, [record_list, unquote(step), unquote(other_opts)])
+          end
+
+          def step(params, unquote(step)) when is_map(params) do
+            unquote(step)(params)
           end
         end
     end)

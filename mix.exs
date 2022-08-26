@@ -13,8 +13,10 @@ defmodule RecordList.MixProject do
       name: "RecordList",
       source: "https://github.com/Ivor/record_list/",
       # The main page in the docs
-      main: "RecordList",
-      extras: ["README.md"]
+      docs: [
+        main: "README",
+        extras: ["README.md"]
+      ]
     ]
   end
 

@@ -1,22 +1,40 @@
 defmodule RecordList.MixProject do
   use Mix.Project
 
+  @version String.trim(File.read!("VERSION"))
+
   def project do
     [
       app: :record_list,
-      version: "0.1.0",
+      version: @version,
       elixir: "~> 1.13",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+      docs: docs(),
+      package: package()
+    ]
+  end
 
-      # Docs
+  defp docs do
+    [
       name: "RecordList",
-      source: "https://github.com/Ivor/record_list/",
-      # The main page in the docs
-      docs: [
-        main: "README",
-        extras: ["README.md"]
-      ]
+      main: "README",
+      extras: ["README.md"],
+      source_ref: @version,
+      source_url: "https://github.com/ivor/record_list/"
+    ]
+  end
+
+  defp package() do
+    [
+      description: "Stepwise construction of lists with meta data.",
+      maintainers: ["Ivor Paul"],
+      licenses: ["MIT"],
+      links: %{
+        "Github" => "https://github.com/ivor/record_list",
+        "Changelog" =>
+          "https://github.com/ivor/record_list/blob/#{@version}/CHANGELOG.md##{String.replace(@version, ".", "")}"
+      }
     ]
   end
 
@@ -30,6 +48,7 @@ defmodule RecordList.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:eliver, "~> 2.0.0", only: :dev},
       {:ex_doc, "~> 0.27", only: :dev, runtime: false}
     ]
   end

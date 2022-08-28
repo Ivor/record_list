@@ -30,8 +30,8 @@ defmodule MyApp.MyRecordList do
   use RecordList, 
     steps: [
       base: [impl: __MODULE__],
-      sort: [callback: fn q, v -> Ecto.Query.order_by(q, ^v) end, default_order: "asc", default_sort: "name"],
-      retrieve: [repo: MyApp.Repo]
+      sort: [impl: __MODULE__, default_order: "asc", default_sort: "name"],
+      retrieve: [impl: __MODULE__, repo: MyApp.Repo]
     ]
 
   @behaviour RecordList.StepBehaviour
@@ -41,6 +41,20 @@ defmodule MyApp.MyRecordList do
     query = from(p in Post, where: p.user_id == ^user_id)
     %{ record_list | query: query }
   end
+
+  @impl true
+  def execute(%RecordList{params: params, query: query} = record_list, :sort, opts) do
+    sort = get_in(params, ["sort"]) || Keyword.fetch!(opts, :default_sort)
+    order = get_in(params, ["order"]) || Keyword.fetch!(opts, :default_order)
+    query = order_by(query, [^order, ^sort])
+
+    %{ record_list | query: query }
+  end
+
+  @impl true
+  def execute(%RecordList{query: query} = record_list, :retrieve, opts) do
+    %{ record_list | records: MyApp.Repo.all(query), loaded: true }
+  end  
 
 end
 ```
@@ -55,36 +69,62 @@ end
   = retrieved_record_list = MyApp.MyRecordList.retrieve(params)
 ```
 
-In practice search and filter steps have been sufficiently unique, and a default implementation has not presented itself. 
-In the example above a default `:sort` and default `:retrieval` (Ecto.Repo) step has been used. There is also a simple, default `:paginate` step, which adds a `%RecordList.Pagination{}` struct with useful information about the count, offset, and page info. 
+In the example above the implementation is in the module implementing `RecordList`. To allow defining multilpe steps in the same module the step `atom` is passed as the second argument. 
+By passing in a different module you can share implemenation of a step between different datalists. 
+
+If you are using RecordList with Ecto, add `RecordListEcto` to your depedencies. Then pass the steps in that library as implementations when defining your record list. 
 
 ```elixir
-defmodule MyApp.MyPagimatedList do
-  import Ecto.Query
-
+defmodule MyEctoApp.MyRecordList do
   use RecordList, 
     steps: [
-      base: [impl: __MODULE__],
-      paginate: [offset_callback: fn q, offset -> Ecto.Query.offset(q, ^offset) end, limit_callback: fn q, limit -> Ecto.Query.limit(q, ^limit) end, per_page: 10, repo: MyApp.Repo],
-      retrieve: [repo: MyApp.Repo]
+      ...,
+      sort: [impl: RecordListEcto.SortStep, ...],
+      paginate: [impl: RecordListEcto.PaginateStep, ...],
+      ...
     ]
-
-  @behaviour RecordList.StepBehaviour
-
-  @impl true
-  def execute(%RecordList{params: %{"user_id" => user_id} = _params} = record_list, :base, _opts) do
-    query = from(p in Post, where: p.user_id == ^user_id)
-    %{ record_list | query: query }
-  end
-
 end
 ```
 
+
 ```elixir  
-%RecordList{records: []], loaded: false, steps: [:paginate, :base], pagination: %RecordList.Pagination{records_count: _, current_page: _}} = paginated_record_list = MyApp.MyRecordList.paginate(params)
-%RecordList{records: records, loaded: true, steps: [:retrieve, :paginate, :base]} = retrieved_record_list = MyApp.MyRecordList.retrieve(paginated_record_list)
+%RecordList{records: []], loaded: false, steps: [:paginate, :base], pagination: %RecordList.Pagination{records_count: _, current_page: _}} 
+  = paginated_record_list = MyEctoApp.MyRecordList.paginate(params)
+%RecordList{records: records, loaded: true, steps: [:retrieve, :paginate, :base]} 
+  = retrieved_record_list = MyEctoApp.MyRecordList.retrieve(paginated_record_list)
 # Or
-%RecordList{records: records, loaded: true, steps: [:retrieve, :paginate, :base]} = retrieved_record_list = MyApp.MyRecordList.retrieve(params)
+%RecordList{records: records, loaded: true, steps: [:retrieve, :paginate, :base]} 
+  = retrieved_record_list = MyEctoApp.MyRecordList.retrieve(params)
 ```
 
-In both these cases the base step is implemented in the module where we use RecordList. A different implementation can also be passed. This way different record lists can use the same base query. The same goes for other steps. Options for a step are passed into the corresponding `execute/3` callback which allows configuring of custom implementations. 
+The `RecordList.__using__` macro would have added the following functions for `sort` to your `MyEctoApp.MyRecordList` module. 
+
+```elixir
+  def sort(%RecordList{} = record_list) do
+    apply(RecordListEcto.SortStep, :execute, [record_list, :sort, options_for_step_other_than_impl])
+  end
+
+  # When called with the params map, record list will run through all the prior steps before calling the version of this 
+  # step that takes the record_list. 
+  def sort(params) do
+    step_keys
+    |> Enum.reduce_while(%RecordList{params: params}, fn step, record_list -> 
+        :sort, record_list ->
+          {:halt, record_list}
+
+        missing_step, record_list ->
+          {:cont, step(record_list, missing_step)}
+      end)
+      |> step(:sort)
+    end)
+  end
+
+  def step(%RecordList{} = record_list, :sort) do
+    apply(__MODULE__, :sort, [record_list])
+  end
+
+  def step(params, sort) when is_map(params) do
+    apply(__MODULE__, :sort, [params])
+  end
+  
+```

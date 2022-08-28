@@ -1,31 +1,34 @@
 defmodule RecordListTest.StreamRecordList do
+  @moduledoc """
+  This module is a contrived case where we're using Elixir's Stream module to genrate data that we can paginate.
+
+  """
+
   use RecordList,
     steps: [
       base: [impl: __MODULE__],
-      paginate: [impl: __MODULE__, per_page: 10, max: 100],
+      paginate: [impl: __MODULE__, per_page: 10],
       retrieve: [impl: __MODULE__]
     ]
 
   @behaviour RecordList.StepBehaviour
 
   @impl true
-  def execute(%RecordList{params: _} = record_list, :base, opts) do
-    # For now the query is just the next function
-    query = &(&1 + 1)
-
-    %{record_list | query: query}
+  def execute(%RecordList{params: _} = record_list, :base, _opts) do
+    %{record_list | query: 1..100}
   end
 
   @impl true
-  def execute(%RecordList{params: params} = record_list, :paginate, opts) do
+  def execute(%RecordList{params: params, query: query} = record_list, :paginate, opts) do
     per_page = Keyword.fetch!(opts, :per_page)
-    count = Keyword.fetch!(opts, :max)
+    count = Enum.count(query)
+
     pagination = RecordList.Pagination.build(Map.get(params, "page"), per_page, count)
 
     query =
-      Stream.iterate(pagination.records_from, record_list.query)
-      |> Stream.take_while(&(&1 <= count))
-      |> Stream.take(per_page)
+      Stream.map(query, & &1)
+      |> Stream.drop_while(&(&1 < pagination.records_from))
+      |> Stream.take_while(&(&1 <= pagination.records_to))
 
     %{record_list | pagination: pagination, query: query}
   end
@@ -99,19 +102,19 @@ defmodule RecordListTest do
 
   test "captures the steps" do
     params = %{}
-    assert %{steps: [:base]} = record_list = StreamRecordList.base(params)
-    assert %{steps: [:paginate, :base]} = record_list = StreamRecordList.paginate(params)
+    assert %{steps: [:base]} = _record_list = StreamRecordList.base(params)
+    assert %{steps: [:paginate, :base]} = _record_list = StreamRecordList.paginate(params)
 
     assert %{steps: [:retrieve, :paginate, :base]} =
-             record_list = StreamRecordList.retrieve(params)
+             _record_list = StreamRecordList.retrieve(params)
   end
 
   test "also generates the step/2 function" do
     params = %{}
-    assert %{steps: [:base]} = record_list = StreamRecordList.step(params, :base)
-    assert %{steps: [:paginate, :base]} = record_list = StreamRecordList.step(params, :paginate)
+    assert %{steps: [:base]} = _record_list = StreamRecordList.step(params, :base)
+    assert %{steps: [:paginate, :base]} = _record_list = StreamRecordList.step(params, :paginate)
 
     assert %{steps: [:retrieve, :paginate, :base]} =
-             record_list = StreamRecordList.step(params, :retrieve)
+             _record_list = StreamRecordList.step(params, :retrieve)
   end
 end

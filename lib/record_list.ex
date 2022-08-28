@@ -105,11 +105,11 @@ defmodule RecordList do
           end
 
           def step(%RecordList{} = record_list, unquote(step)) do
-            unquote(step)(record_list)
+            apply(__MODULE__, unquote(step), [record_list])
           end
 
           def step(params, unquote(step)) when is_map(params) do
-            unquote(step)(params)
+            apply(__MODULE__, unquote(step), [params])
           end
         end
     end)

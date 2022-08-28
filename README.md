@@ -13,7 +13,7 @@ by adding `record_list` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:record_list, "~> 0.1.0"}
+    {:record_list, "~> 0.1.3"}
   ]
 end
 ```

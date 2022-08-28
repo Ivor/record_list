@@ -72,7 +72,16 @@ end
 In the example above the implementation is in the module implementing `RecordList`. To allow defining multilpe steps in the same module the step `atom` is passed as the second argument. 
 By passing in a different module you can share implemenation of a step between different record lists. 
 
-If you are using RecordList with Ecto, add `RecordListEcto` to your depedencies. Then pass the steps in that library as implementations when defining your record list. 
+If you are using RecordList with Ecto, add [RecordListEcto](https://hexdocs.pm/record_list_ecto) to your depedencies. Then pass the steps in that library as implementations when defining your record list. 
+
+```elixir
+  def deps do
+    [
+      {:record_list, "~> 0.1.3"},
+      {:record_list_ecto, "~> 0.1.2"}
+    ]
+  end
+```
 
 ```elixir
 defmodule MyEctoApp.MyRecordList do

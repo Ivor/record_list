@@ -70,7 +70,7 @@ end
 ```
 
 In the example above the implementation is in the module implementing `RecordList`. To allow defining multilpe steps in the same module the step `atom` is passed as the second argument. 
-By passing in a different module you can share implemenation of a step between different datalists. 
+By passing in a different module you can share implemenation of a step between different record lists. 
 
 If you are using RecordList with Ecto, add `RecordListEcto` to your depedencies. Then pass the steps in that library as implementations when defining your record list. 
 

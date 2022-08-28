@@ -1,12 +1,10 @@
 defmodule RecordList.MixProject do
   use Mix.Project
 
-  @version String.trim(File.read!("VERSION"))
-
   def project do
     [
       app: :record_list,
-      version: @version,
+      version: version(),
       elixir: "~> 1.13",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -15,12 +13,16 @@ defmodule RecordList.MixProject do
     ]
   end
 
+  defp version do
+    String.trim(File.read!("VERSION"))
+  end
+
   defp docs do
     [
       name: "RecordList",
       main: "README",
       extras: ["README.md"],
-      source_ref: @version,
+      source_ref: version(),
       source_url: "https://github.com/ivor/record_list/"
     ]
   end
@@ -33,7 +35,7 @@ defmodule RecordList.MixProject do
       links: %{
         "Github" => "https://github.com/ivor/record_list",
         "Changelog" =>
-          "https://github.com/ivor/record_list/blob/#{@version}/CHANGELOG.md##{String.replace(@version, ".", "")}"
+          "https://github.com/ivor/record_list/blob/#{version()}/CHANGELOG.md##{String.replace(version(), ".", "")}"
       }
     ]
   end

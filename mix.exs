@@ -36,7 +36,16 @@ defmodule RecordList.MixProject do
         "Github" => "https://github.com/ivor/record_list",
         "Changelog" =>
           "https://github.com/ivor/record_list/blob/#{version()}/CHANGELOG.md##{String.replace(version(), ".", "")}"
-      }
+      },
+      files: [
+        "lib",
+        "mix.exs",
+        "README.md",
+        "CHANGELOG.md",
+        ".formatter.exs",
+        "VERSION",
+        "LICENSE"
+      ]
     ]
   end
 

@@ -20,7 +20,7 @@ defmodule RecordList.MixProject do
   defp docs do
     [
       name: "RecordList",
-      main: "README",
+      main: "readme",
       extras: ["README.md"],
       source_ref: version(),
       source_url: "https://github.com/ivor/record_list/"

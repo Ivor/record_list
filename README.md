@@ -2,7 +2,7 @@
 
 A stepwise construction of a struct, from a map of parameters, to return a list of records, and meta information about the query. 
 
-Lists of records are useful in web applications and API's. The records returned often depend on paramaters such as sorting, filtering, searching and pagination. 
+Lists of records are useful in web applications and API's. The records returned often depend on parameters such as sorting, filtering, searching and pagination. 
 The RecordList struct is built up by passing it through the steps defined, capturing the information used to define the list as well as the records. 
 
 ## Installation
@@ -69,8 +69,8 @@ end
   = retrieved_record_list = MyApp.MyRecordList.retrieve(params)
 ```
 
-In the example above the implementation is in the module implementing `RecordList`. To allow defining multilpe steps in the same module the step `atom` is passed as the second argument. 
-By passing in a different module you can share implemenation of a step between different record lists. 
+In the example above the implementation is in the module implementing `RecordList`. To allow defining multiple steps in the same module the step `atom` is passed as the second argument. 
+By passing in a different module you can share implemenation of a step between different RecordLists. 
 
 If you are using RecordList with Ecto, add [RecordListEcto](https://hexdocs.pm/record_list_ecto) to your depedencies. Then pass the steps in that library as implementations when defining your record list. 
 
